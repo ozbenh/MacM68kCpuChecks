@@ -1,4 +1,4 @@
-M68kCpuChecks v1
+M68kCpuChecks v2
 Machine 9
 CPU 4
 FPU 2

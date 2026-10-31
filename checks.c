@@ -19,7 +19,7 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "1"
+#define VERSION "2"
 
 #define NF 1
 #define NM 2
@@ -600,6 +600,10 @@ static void RunTable(void)
 			out("%s: not on this machine\n", t->name);
 			continue;
 		}
+		/* On the screen only: if a test hangs, this tells which, and if it comes
+		   back with no next one, the save after it is what hung */
+		printf("> %s\n", t->name);
+		fflush(stdout);
 		Setup(t->code, 0);
 		Snapshot();
 		Run();
