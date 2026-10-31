@@ -87,6 +87,13 @@ cc_f_read:	move.l	(%a5),%d0
 	E
 cc_f_aslw:	asl.w	%d0,%d1
 	E
+	.globl	cc_f_abcdm, cc_f_sbcdm, cc_f_nbcdm
+cc_f_abcdm:	abcd	-(%a0),-(%a1)
+	E
+cc_f_sbcdm:	sbcd	-(%a0),-(%a1)
+	E
+cc_f_nbcdm:	nbcd	-(%a1)
+	E
 cc_f_roxrw:	roxr.w	%d0,%d1
 	E
 
@@ -437,6 +444,308 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	moveq	#5,%d7
 	movec	%d7,%sfc
 	moves.w	(%a0),%a1
+	E
+
+| --- Bit fields with register offsets out of range ------------------------
+
+	.macro	BFREG name, op, tail
+	T	"\name D0 offset 35", 3
+	move.l	#35,%d1
+	moveq	#8,%d2
+	\op	\tail
+	E
+	T	"\name D0 offset -3", 3
+	moveq	#-3,%d1
+	moveq	#8,%d2
+	\op	\tail
+	E
+	T	"\name D0 width 40", 3
+	moveq	#4,%d1
+	moveq	#40,%d2
+	\op	\tail
+	E
+	.endm
+	BFREG	BFTST, bftst, "%d0{%d1:%d2}"
+	BFREG	BFCHG, bfchg, "%d0{%d1:%d2}"
+	BFREG	BFCLR, bfclr, "%d0{%d1:%d2}"
+	BFREG	BFSET, bfset, "%d0{%d1:%d2}"
+	BFREG	BFEXTU, bfextu, "%d0{%d1:%d2},%d3"
+	BFREG	BFEXTS, bfexts, "%d0{%d1:%d2},%d3"
+	BFREG	BFFFO, bfffo, "%d0{%d1:%d2},%d3"
+	BFREG	BFINS, bfins, "%d3,%d0{%d1:%d2}"
+
+	.macro	BFMEM name, op, tail
+	T	"\name (A0) offset 35", 3
+	move.l	#35,%d1
+	moveq	#8,%d2
+	\op	\tail
+	E
+	T	"\name (A0) offset -3", 3
+	moveq	#-3,%d1
+	moveq	#8,%d2
+	\op	\tail
+	E
+	.endm
+	BFMEM	BFTST, bftst, "(%a0){%d1:%d2}"
+	BFMEM	BFCHG, bfchg, "(%a0){%d1:%d2}"
+	BFMEM	BFEXTU, bfextu, "(%a0){%d1:%d2},%d3"
+	BFMEM	BFFFO, bfffo, "(%a0){%d1:%d2},%d3"
+	BFMEM	BFINS, bfins, "%d3,(%a0){%d1:%d2}"
+
+| --- CAS2 when it fails, with the same or different compare registers -------
+
+	T	"CAS2.L same Dc, second fails", 3
+	move.l	(%a0),%d1
+	cas2.l	%d1:%d1,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.W same Dc, first fails", 3
+	cas2.w	%d1:%d1,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.W same Dc, second fails", 3
+	move.w	(%a0),%d1
+	cas2.w	%d1:%d1,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.L other Dc, first fails", 3
+	cas2.l	%d1:%d2,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.L other Dc, second fails", 3
+	move.l	(%a0),%d1
+	cas2.l	%d1:%d2,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.W other Dc, first fails", 3
+	cas2.w	%d1:%d2,%d3:%d4,(%a0):(%a1)
+	E
+	T	"CAS2.W other Dc, second fails", 3
+	move.w	(%a0),%d1
+	cas2.w	%d1:%d2,%d3:%d4,(%a0):(%a1)
+	E
+
+| --- MOVEM with the addressing register anywhere in the list ----------------
+
+	T	"MOVEM.L D0/A0-A2,-(A0)"
+	movem.l	%d0/%a0-%a2,-(%a0)
+	E
+	T	"MOVEM.L D0/A0-A2,-(A1)"
+	movem.l	%d0/%a0-%a2,-(%a1)
+	E
+	T	"MOVEM.L D0/A0-A2,-(A2)"
+	movem.l	%d0/%a0-%a2,-(%a2)
+	E
+	T	"MOVEM.W D0/A0-A2,-(A1)"
+	movem.w	%d0/%a0-%a2,-(%a1)
+	E
+	T	"MOVEM.W D0/A0-A2,-(A2)"
+	movem.w	%d0/%a0-%a2,-(%a2)
+	E
+	T	"MOVEM.L A0-A2,(A1)"
+	movem.l	%a0-%a2,(%a1)
+	E
+	T	"MOVEM.L (A1)+,D0/A0-A2"
+	movem.l	(%a1)+,%d0/%a0-%a2
+	E
+	T	"MOVEM.W (A1)+,D0/A0-A2"
+	movem.w	(%a1)+,%d0/%a0-%a2
+	E
+	T	"MOVEM.L (A1),A0-A2"
+	movem.l	(%a1),%a0-%a2
+	E
+	T	"MOVEM.L A6-A7,-(A7)", 1, 9, NA
+	movem.l	%a6-%a7,-(%a7)
+	E
+	T	"MOVEM.W A6-A7,-(A7)", 1, 9, NA
+	movem.w	%a6-%a7,-(%a7)
+	E
+
+| --- Trace, against the exceptions and on each kind of branch ---------------
+
+| T1 goes on right before the instruction under test, or the setup gets traced
+	.macro	TRACE1
+	ori.w	#0x8000,%sr
+	.endm
+	T	"T1, CHK trap"
+	moveq	#2,%d0
+	moveq	#5,%d1
+	TRACE1
+	chk.w	%d0,%d1
+	E
+	T	"T1, zero divide"
+	moveq	#0,%d0
+	TRACE1
+	divu.w	%d0,%d1
+	E
+	T	"T1, TRAPV taken"
+	ori.b	#2,%ccr
+	TRACE1
+	trapv
+	E
+	T	"T1, TRAPT", 3
+	TRACE1
+	trapt
+	E
+	T	"T1, line A"
+	TRACE1
+	.short	0xA123
+	E
+	T	"T1, line F"
+	TRACE1
+	.short	0xFE00
+	E
+	T	"T1, privilege violation"
+	move	#0x8000,%sr
+	move	#0x2700,%sr
+	E
+	T	"T1, BRA"
+	TRACE1
+	bra.s	1f
+	nop
+1:	E
+	T	"T1, RTE"
+	lea	1f(%pc),%a3
+	move.w	#0,-(%sp)
+	move.l	%a3,-(%sp)
+	move.w	#0x2700,-(%sp)
+	TRACE1
+	rte
+1:	E
+
+	.macro	TRACE0 name
+	T	"T0, \name", 3
+	ori.w	#0x4000,%sr
+	.endm
+	TRACE0	"ADD"
+	add.l	%d0,%d1
+	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"BSR"
+	bsr.s	1f
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"Bcc taken"
+	bne.s	1f
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"Bcc not taken"
+	bmi.s	1f
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"DBRA taken"
+	moveq	#1,%d1
+	dbra	%d1,1f
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"DBRA expired"
+	moveq	#0,%d1
+	dbra	%d1,1f
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"JMP"
+	jmp	1f(%pc)
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"JSR"
+	jsr	1f(%pc)
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"RTS"
+	pea	1f(%pc)
+	rts
+	nop
+1:	andi.w	#0x3FFF,%sr
+	E
+	TRACE0	"TRAP"
+	trap	#5
+	E
+	TRACE0	"MOVE to SR"
+	move	#0x2700,%sr
+	E
+
+| --- Patching code the cache may hold ---------------------------------------
+| d3 tells which code ran the second time: 1 for the old, 2 for the new.
+| The other caches stay as they are: on a 68040 dirty data must stay reachable.
+
+	.macro	PATCH name, min, max, before, between
+	T	"I-cache, \name", \min, \max
+	movec	%cacr,%d4
+	\before
+	lea	1f(%pc),%a3
+	moveq	#1,%d2
+1:	moveq	#1,%d3
+	move.b	#2,1(%a3)
+	\between
+	dbra	%d2,1b
+	move.b	#1,1(%a3)
+	\between
+	movec	%d4,%cacr
+	moveq	#0,%d4
+	moveq	#0,%d5
+	suba.l	%a3,%a3
+	E
+	.endm
+	.macro	CLEARI
+	movec	%cacr,%d5
+	ori.l	#0x08,%d5
+	movec	%d5,%cacr
+	.endm
+	.macro	CPUSHA
+	.short	0xF4F8
+	.endm
+	.macro	OFF bit
+	movec	%cacr,%d5
+	bclr	#\bit,%d5
+	movec	%d5,%cacr
+	.endm
+	PATCH	"as it is", 3, 5
+	PATCH	"cleared between", 3, 4, , CLEARI
+	PATCH	"off", 3, 4, "OFF 0"
+	PATCH	"CPUSHA between", 5, 5, , CPUSHA
+	PATCH	"off, 68040", 5, 5, "OFF 15"
+
+| --- MMU status at each level ----------------------------------------------
+
+	.macro	PTEST n
+	T	"PTESTR FC5 data, level \n", 3, 4, NM
+	ptestr	#5,(%a0),#\n,%a2
+	pmove	%psr,(%a1)
+	suba.l	%a2,%a2
+	E
+	T	"PTESTW FC1 ROM, level \n", 3, 4, NM
+	movea.l	0x2AE,%a3
+	ptestw	#1,(%a3),#\n,%a2
+	pmove	%psr,(%a1)
+	suba.l	%a2,%a2
+	suba.l	%a3,%a3
+	E
+	.endm
+	PTEST	1
+	PTEST	2
+	PTEST	3
+	PTEST	4
+	PTEST	5
+	PTEST	6
+	PTEST	7
+	T	"PTESTR after PFLUSHA, level 0", 3, 4, NM
+	pflusha
+	ptestr	#5,(%a0),#0
+	pmove	%psr,(%a1)
+	E
+	T	"PTESTR after a read, level 0", 3, 4, NM
+	pflusha
+	move.l	(%a0),%d1
+	ptestr	#5,(%a0),#0
+	pmove	%psr,(%a1)
+	E
+	T	"PTESTR after a write, level 0", 3, 4, NM
+	pflusha
+	move.l	%d1,(%a0)
+	ptestr	#5,(%a0),#0
+	pmove	%psr,(%a1)
 	E
 
 | --- Status register and control registers --------------------------------
@@ -987,6 +1296,27 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	moveq	#-1,%d0
 	divs.w	%d0,%d1
 	E
+
+| --- All the offsets of the FPU's constant ROM, for the sweep in checks.c ----
+
+	.even
+	.set	k, 0
+	.macro	CONSTANT
+	fmovecr	#k,%fp0
+	fmove.x	%fp0,(%a1)
+	fmove.l	%fpsr,(%a2)
+	jmp	cc_done
+	.set	k, k+1
+	.endm
+	.globl	cc_fmovecr, cc_fmovecr_size
+cc_fmovecr:
+	.rept	64
+	CONSTANT
+	.endr
+cc_fmovecr_end:
+	.even
+cc_fmovecr_size:
+	.long	(cc_fmovecr_end - cc_fmovecr) / 64
 
 	.even
 cc_big:		.long	0x7FFE0000, 0x80000000, 0

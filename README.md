@@ -4,12 +4,13 @@ M68kCpuChecks runs instructions on the processor of a classic 68k Macintosh
 and writes down exactly what they do. It covers what the Motorola manuals leave
 undefined or say little about, such as the flags of BCD instructions and of a
 division overflow, registers used in their own operation (`LINK A7`,
-`MOVEM A0,-(A0)`, an odd stack pointer), exception stack frames, the FPU, and
-bus errors. The results help the [Snow](https://github.com/twvd/snow) emulator
+`MOVEM A0,-(A0)`, an odd stack pointer), bit fields and `CAS2` in corner cases,
+trace, exception stack frames, the FPU's constants and flags, MMU status, patching
+code that is in the cache, and bus errors. The results help the [Snow](https://github.com/twvd/snow) emulator
 behave like the real chips, as so far it relies on the manuals and on other
 emulators for the 68020 and 68030.
 
-It only changes its own memory. Interrupts are masked during each test, for a
+It only changes its own memory, and for a moment its own code. Interrupts are masked during each test, for a
 very short time, so the mouse pointer may stutter.
 
 ## Running it

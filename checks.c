@@ -19,7 +19,7 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "6"
+#define VERSION "7"
 
 /* The NoA7 build leaves out the tests that use A7 in their own operation */
 #ifdef NO_A7
@@ -71,6 +71,9 @@ extern const char cc_f_abcd[], cc_f_sbcd[], cc_f_nbcd[], cc_f_divu[], cc_f_divs[
 extern const char cc_f_chkw[], cc_f_chkl[], cc_f_cmp2b[], cc_f_chk2b[];
 extern const char cc_f_divul[], cc_f_divsl[], cc_f_mulul[], cc_f_mulsl[], cc_f_read[];
 extern const char cc_f_aslw[], cc_f_roxrw[];
+extern const char cc_f_abcdm[], cc_f_sbcdm[], cc_f_nbcdm[];
+extern const char cc_fmovecr[];
+extern const uint32_t cc_fmovecr_size;
 
 #define DATA_SIZE 1024
 #define STACK_SIZE 1024
@@ -686,6 +689,72 @@ static void SweepShift(const char *name, const void *code)
 	}
 }
 
+/* -(An) to -(An): the operands are the bytes below A0 and A1 */
+static void SweepBcdMem(const char *name, const void *code, bool unary)
+{
+	for (size_t c = 0; c < sizeof(bcdCcrs); c++)
+	{
+		for (size_t x = 0; x < (unary ? 1 : BCD_COUNT); x++)
+		{
+			out("%s ccr=%02X s=%02X:", name, bcdCcrs[c], unary ? 0 : bcdValues[x]);
+			for (size_t y = 0; y < BCD_COUNT; y++)
+			{
+				Setup(code, bcdCcrs[c]);
+				dataBuf[0xFF] = bcdValues[x];
+				dataBuf[0x13F] = bcdValues[y];
+				Run();
+				out(" %02X/%02X", dataBuf[0x13F], cc_out_sr & 0x1F);
+			}
+			out("\n");
+		}
+	}
+}
+
+/* The flags a zero divide stacks: registers in d1 and d2, by the sign of the dividend */
+static void SweepZeroDivide(const char *name, const void *code)
+{
+	static const uint32_t dividends[] = {0x00000000, 0x00000001, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFF};
+
+	for (size_t c = 0; c < 2; c++)
+	{
+		uint16_t ccr = c ? 0x1F : 0;
+		out("%s by 0, ccr=%02X:", name, ccr);
+		for (size_t x = 0; x < COUNT(dividends); x++)
+		{
+			Setup(code, ccr);
+			state.d[0] = 0;
+			state.d[1] = dividends[x];
+			state.d[2] = (dividends[x] & 0x80000000UL) ? 0xFFFFFFFFUL : 0;
+			Run();
+			out(" %u/%02X", cc_vector, (cc_vector ? Word(cc_out_a7) : cc_out_sr) & 0x1F);
+		}
+		out("\n");
+	}
+}
+
+/* All the offsets of the constant ROM: the reserved ones differ per mask set */
+static void SweepConstants(void)
+{
+	for (uint32_t k = 0; k < 64; k++)
+	{
+		const void *code = cc_fmovecr + k * cc_fmovecr_size;
+		Setup(code, 0);
+		Run();
+		if (cc_vector)
+		{
+			out("FMOVECR $%02lX: vector %u\n", (unsigned long)k, cc_vector);
+			if (cc_vector >= 48 && cc_vector <= 54)
+			{
+				cc_fpu_null();
+			}
+			continue;
+		}
+		out("FMOVECR $%02lX: %08lX %08lX %08lX fpsr=%08lX\n", (unsigned long)k,
+			(unsigned long)Long((uint32_t)dataBuf + 0x140), (unsigned long)Long((uint32_t)dataBuf + 0x144),
+			(unsigned long)Long((uint32_t)dataBuf + 0x148), (unsigned long)Long((uint32_t)dataBuf + 0x180));
+	}
+}
+
 /* --- Main --------------------------------------------------------------- */
 
 static void RunTable(void)
@@ -811,6 +880,11 @@ int main(void)
 	SWEEP(SweepBcd, "ABCD", cc_f_abcd, false);
 	SWEEP(SweepBcd, "SBCD", cc_f_sbcd, false);
 	SWEEP(SweepBcd, "NBCD", cc_f_nbcd, true);
+	SWEEP(SweepBcdMem, "ABCD -(An)", cc_f_abcdm, false);
+	SWEEP(SweepBcdMem, "SBCD -(An)", cc_f_sbcdm, false);
+	SWEEP(SweepBcdMem, "NBCD -(An)", cc_f_nbcdm, true);
+	SWEEP(SweepZeroDivide, "DIVU.W", cc_f_divu);
+	SWEEP(SweepZeroDivide, "DIVS.W", cc_f_divs);
 	SWEEP(SweepDiv, "DIVU", cc_f_divu, false);
 	SWEEP(SweepDiv, "DIVS", cc_f_divs, true);
 	SWEEP(SweepChk, "CHK.W", cc_f_chkw, false);
@@ -825,6 +899,13 @@ int main(void)
 		SWEEP(SweepLong, "DIVS.L", cc_f_divsl, true);
 		SWEEP(SweepLong, "MULU.L", cc_f_mulul, false);
 		SWEEP(SweepLong, "MULS.L", cc_f_mulsl, false);
+		SWEEP(SweepZeroDivide, "DIVU.L", cc_f_divul);
+		SWEEP(SweepZeroDivide, "DIVS.L", cc_f_divsl);
+	}
+	if (fpuType && BeginStep("FMOVECR"))
+	{
+		SweepConstants();
+		SaveResults();
 	}
 
 	if (fpuType)
