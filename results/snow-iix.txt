@@ -1,4 +1,4 @@
-M68kCpuChecks v8
+M68kCpuChecks v9
 Machine 7
 CPU 4
 FPU 2
@@ -77,10 +77,10 @@ MOVEP.L D0,1(A0): sr=2700
   D+107=78
 MOVEP.W 1(A0),D0: sr=2700 d0=12343C4A
 Odd SP, MOVE.B D0,-(A7): sr=2700 d1=S+2FF a7=S+2FE
-  S+2FF=78
+  S+2FC=C+064 
 Odd SP, MOVE.B (A7)+,D0: sr=2700 d0=123456EE d1=S+303
 Odd SP, MOVE.W D0,-(A7): sr=2700 d1=S+2FF
-  S+2FF=5678
+  S+2FC=C+026 78
 Odd SP, MOVE.L D0,-(A7): sr=2700 d1=S+2FD
   S+2FD=12345678 
 Odd SP, MOVEM.L D0-D1/A7,-(A7): sr=2700 d2=S+2F5
@@ -214,17 +214,17 @@ MOVEM.L A6-A7,-(A7): sr=2700 a7=S+2F8
 MOVEM.W A6-A7,-(A7): sr=2700 a7=S+2FC
   S+2FC=322866E6 
 T1, CHK trap: vector=9 sr=2700 d0=00000002 d1=00000005 a7=S+2E8
-  frame sr=2700 pc=006526D6 fmt=2 off=024 addr=C+008
+  frame sr=2700 pc=00652742 fmt=2 off=024 addr=C+008
 T1, zero divide: vector=9 sr=2700 d0=00000000 a7=S+2E8
-  frame sr=2700 pc=006526C8 fmt=2 off=024 addr=C+006
+  frame sr=2700 pc=00652734 fmt=2 off=024 addr=C+006
 T1, TRAPV taken: vector=9 sr=2700 a7=S+2E8
-  frame sr=2702 pc=006526E4 fmt=2 off=024 addr=C+008
+  frame sr=2702 pc=00652750 fmt=2 off=024 addr=C+008
 T1, TRAPT: vector=9 sr=2700 a7=S+2E8
-  frame sr=2700 pc=006526E4 fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=00652750 fmt=2 off=024 addr=C+004
 T1, line A: vector=9 sr=2700 a7=S+2EC
-  frame sr=2700 pc=0065270E fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=0065277A fmt=2 off=024 addr=C+004
 T1, line F: vector=9 sr=2700 a7=S+2EC
-  frame sr=2700 pc=0065271C fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=00652788 fmt=2 off=024 addr=C+004
 T1, BRA: vector=9 sr=2700 a7=S+2F4
   frame sr=A700 pc=C+008 fmt=2 off=024 addr=C+004
 T1, RTE: vector=9 sr=2700 a3=C+014 a7=S+2F4
@@ -328,13 +328,13 @@ Privilege, MOVEC: vector=8 sr=2700 a7=S+2F8
 Trace, NOP: vector=9 sr=2700 a7=S+2F4
   frame sr=A700 pc=C+006 fmt=2 off=024 addr=C+004
 Trace, TRAP: vector=9 sr=2700 a7=S+2EC
-  frame sr=2700 pc=00652888 fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=006528F4 fmt=2 off=024 addr=C+004
 Trace, illegal: vector=4 sr=2700 a7=S+2F8
   frame sr=A700 pc=C+004 fmt=0 off=010
 Trace on change of flow, NOP: sr=2700 d1=23452700
 Trace on change of flow, BRA: sr=2700
 RTE format 0: sr=2700 a3=C+010
-  S+2F8=27000065 44F80000 
+  S+2F8=27000065 45640000 
 RTE format 1 alone: vector=14 sr=2700 a3=C+010 a7=S+2F8
   frame sr=2700 pc=C+00E fmt=0 off=038
 RTE undefined format: vector=14 sr=2700 a3=C+010 a7=S+2F0
@@ -394,7 +394,7 @@ MMUSR: after the bus error: sr=2700
 MMU instruction in user mode: vector=8 sr=2700 a7=S+2F8
   frame sr=0700 pc=C+006 fmt=0 off=020
 PFLUSHA in user mode: vector=8 sr=2700 a7=S+2F8
-  frame sr=0700 pc=0065260C fmt=0 off=020
+  frame sr=0700 pc=00652678 fmt=0 off=020
 FMOVE.L rounding: sr=2700 d1=00000004 d2=00000002 d3=FFFFFFFE
   D+140=C0000000 A0000000 00000000 7FFF0000 FFFFFFFF FFFFFFFF 
   D+180=08000208 
@@ -437,10 +437,10 @@ FDIV inexact status: sr=2700
 FSQRT of -1 status: sr=2700
   D+140=FFFF0000 FFFFFFFF FFFFFFFF 40000000 C0000000 00000000 
   D+180=09002080 
-FMUL overflow status: sr=2700 a3=00655386
+FMUL overflow status: sr=2700 a3=006553F2
   D+140=7FFF0000 80000000 00000000 40000000 C0000000 00000000 
   D+180=02001248 
-FADD status of a signalling NaN: sr=2700 a3=00655392
+FADD status of a signalling NaN: sr=2700 a3=006553FE
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 
   D+180=01000000 
 FGETMAN -6: sr=2700
@@ -479,9 +479,9 @@ FPIAR after FMOVE to FPSR: sr=2700 d1=12345678
 FPCR precision 11: sr=2700
   D+140=40000000 80000000 00000400 3FFF0000 80000000 00000000 
   D+180=00000000 
-FMOVEM.X bit patterns: sr=2700 a3=006553A6
+FMOVEM.X bit patterns: sr=2700 a3=00655412
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 3FFE0000 80000000 00000000 00000000 00000000 00000001 80000000 00000000 00000000 7FFF0000 80000000 00000000 
-FMOVE.X of unnormal and denormal: sr=2700 a3=006553A6
+FMOVE.X of unnormal and denormal: sr=2700 a3=00655412
   D+140=3FFE0000 80000000 00000000 80000000 00000000 00000000 
   D+180=0C000000 
 FDIV by zero trap: sr=2700
@@ -489,15 +489,15 @@ FDIV inexact trap: sr=2700
 BSUN trap: sr=2700
 FBcc predicate 32: vector=11 sr=2700 a7=S+2F8
   frame sr=2700 pc=C+010 fmt=0 off=02C
-FSAVE after reset: sr=2700 a3=0065539E
+FSAVE after reset: sr=2700 a3=0065540A
   D+140=00000000 
 FSAVE after an operation: sr=2700
   D+140=1F380000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
 FSAVE in user mode: vector=8 sr=2700 a7=S+2F8
   frame sr=0700 pc=C+004 fmt=0 off=020
-FRESTORE in user mode: vector=8 sr=2700 a3=0065539E a7=S+2F8
+FRESTORE in user mode: vector=8 sr=2700 a3=0065540A a7=S+2F8
   frame sr=0700 pc=C+008 fmt=0 off=020
-FRESTORE bad frame: vector=14 sr=2700 a3=006553A2 a7=S+2F8
+FRESTORE bad frame: vector=14 sr=2700 a3=0065540E a7=S+2F8
   frame sr=2700 pc=C+004 fmt=0 off=038
 DIVS.W $80000000 by -1: sr=2700 d0=FFFFFFFF d1=80000000
 

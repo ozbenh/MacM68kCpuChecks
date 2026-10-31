@@ -1,4 +1,4 @@
-M68kCpuChecks v8
+M68kCpuChecks v9
 Machine 4
 CPU 1
 FPU 0
@@ -195,16 +195,16 @@ MOVEM.L A6-A7,-(A7): sr=2700 a7=S+2F8
 MOVEM.W A6-A7,-(A7): sr=2700 a7=S+2FC
   S+2FC=E3E218C4 
 T1, CHK trap: vector=9 sr=2700 d0=00000002 d1=00000005 a7=S+2F4
-  frame sr=2700 pc=0025D8AC
+  frame sr=2700 pc=0025D918
 T1, zero divide: vector=9 sr=2700 d0=00000000 a7=S+2F4
-  frame sr=2700 pc=0025D89E
+  frame sr=2700 pc=0025D90A
 T1, TRAPV taken: vector=9 sr=2700 a7=S+2F4
-  frame sr=2702 pc=0025D8BA
+  frame sr=2702 pc=0025D926
 T1, TRAPT: not on this machine
 T1, line A: vector=9 sr=2700 a7=S+2F4
-  frame sr=2700 pc=0025D8E4
+  frame sr=2700 pc=0025D950
 T1, line F: vector=9 sr=2700 a7=S+2F4
-  frame sr=2700 pc=0025D8F2
+  frame sr=2700 pc=0025D95E
 T1, BRA: vector=9 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+008
 T1, RTE: vector=9 sr=2700 a3=C+014 a7=S+2F8
@@ -278,13 +278,13 @@ Privilege, MOVEC: not on this machine
 Trace, NOP: vector=9 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+006
 Trace, TRAP: vector=9 sr=2700 a7=S+2F4
-  frame sr=2700 pc=0025DA5E
+  frame sr=2700 pc=0025DACA
 Trace, illegal: vector=4 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+004
 Trace on change of flow, NOP: not on this machine
 Trace on change of flow, BRA: not on this machine
 RTE format 0: sr=2700 a3=C+010 a7=S+2FE
-  S+2F8=27000025 F6CE0000 
+  S+2F8=27000025 F73A0000 
 RTE format 1 alone: not on this machine
 RTE undefined format: not on this machine
 M=1, TRAP: not on this machine

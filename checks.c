@@ -18,8 +18,9 @@
 #include <Files.h>
 #include <Memory.h>
 #include <OSUtils.h>
+#include <Windows.h>
 
-#define VERSION "8"
+#define VERSION "9"
 
 /* The NoA7 build leaves out the tests that use A7 in their own operation */
 #ifdef NO_A7
@@ -102,11 +103,18 @@ static void out(const char *format, ...)
 	}
 }
 
+/* Set when the user chose to run on a volume that can't be written */
+static bool noSaving;
+
 static void SaveResults(void)
 {
 	static const unsigned char name[] = "\p" PROGRAM " Results";
 	short refNum;
 
+	if (noSaving)
+	{
+		return;
+	}
 	(void)FSDelete(name, 0);
 	if (Create(name, 0, 'ttxt', 'TEXT') != noErr || FSOpen(name, 0, &refNum) != noErr)
 	{
@@ -136,23 +144,30 @@ static struct
 static int stepNumber;
 static const unsigned char progressName[] = "\p" PROGRAM " Progress";
 
-static void SaveProgress(void)
+/* Returns false if it couldn't be written. A locked volume can let a file open, and only fail the write. */
+static bool SaveProgress(void)
 {
 	short refNum;
 	long count = sizeof(progress);
+	OSErr err;
 
+	if (noSaving)
+	{
+		return false;
+	}
 	if (FSOpen(progressName, 0, &refNum) != noErr)
 	{
 		if (Create(progressName, 0, 'ttxt', 'BINA') != noErr ||
 			FSOpen(progressName, 0, &refNum) != noErr)
 		{
-			return;
+			return false;
 		}
 	}
 	(void)SetFPos(refNum, fsFromStart, 0);
-	(void)FSWrite(refNum, &count, &progress);
+	err = FSWrite(refNum, &count, &progress);
 	(void)FSClose(refNum);
 	(void)FlushVol(NULL, 0);
+	return err == noErr;
 }
 
 static void LoadProgress(void)
@@ -178,10 +193,23 @@ static void LoadProgress(void)
 		progress.hung[progress.current] = 1;
 	}
 	progress.current = -1;
+	int hung = 0;
+	for (int i = 0; i < MAX_STEPS; i++)
+	{
+		hung += progress.hung[i];
+	}
+	if (hung)
+	{
+		printf("Tests that hung on earlier runs, left out this time: %d\n\n", hung);
+	}
 }
 
 static void EndProgress(void)
 {
+	if (noSaving)
+	{
+		return;
+	}
 	(void)FSDelete(progressName, 0);
 	(void)FlushVol(NULL, 0);
 }
@@ -191,13 +219,17 @@ static bool BeginStep(const char *name)
 {
 	int step = stepNumber++;
 
-	printf("> %s\n", name);
-	fflush(stdout);
 	if (step < MAX_STEPS && progress.hung[step])
 	{
+		printf("> %s: hung on an earlier run, left out\n", name);
+		fflush(stdout);
 		out("%s: hung on an earlier run, left out\n", name);
+		/* The next test may hang too: these lines must not depend on it */
+		SaveResults();
 		return false;
 	}
+	printf("> %s\n", name);
+	fflush(stdout);
 	progress.current = step;
 	SaveProgress();
 	return true;
@@ -793,9 +825,34 @@ static void RunTable(void)
 			}
 		}
 		/* A crash from here on still leaves the results of what ran */
-		printf("  saving\n");
+		if (!noSaving)
+		{
+			printf("  saving\n");
+		}
 		SaveResults();
 	}
+}
+
+static bool AskToRunWithoutSaving(void)
+{
+	printf("!!! THIS DISK CAN'T BE WRITTEN TO !!!\n"
+		"Nothing can be saved: no results, and if the Mac hangs, no\n"
+		"skipping that test the next time. Better to quit now and\n"
+		"copy this program to a disk that isn't locked.\n\n"
+		"Run it anyway? Type Y and Return to run, or just Return\n"
+		"to quit: ");
+	fflush(stdout);
+	int answer = getchar();
+	/* The Return is still to be read, and would answer the last prompt */
+	for (int c = answer; c != '\n' && c != '\r' && c != EOF; c = getchar())
+	{
+	}
+	if (answer != 'y' && answer != 'Y')
+	{
+		return false;
+	}
+	noSaving = true;
+	return true;
 }
 
 int main(void)
@@ -807,7 +864,30 @@ int main(void)
 	   that visible without drawing the sweeps a piece at a time. */
 	setvbuf(stdout, NULL, _IOLBF, 0);
 
-	printf(PROGRAM " v%s: don't touch the mouse or the keyboard.\n\n", VERSION);
+	printf("**********************************************************\n"
+		"  " PROGRAM " v%s\n"
+		"\n"
+		"  THIS CAN HANG YOUR MAC. That is expected: a hang is one\n"
+		"  of the results.\n"
+		"\n"
+		"  If nothing changes for a few minutes, take a photo of\n"
+		"  the screen, restart the Mac and run this again. It will\n"
+		"  skip the test that hung and go on. This may take several\n"
+		"  restarts.\n"
+		"\n"
+		"  Don't touch the mouse or the keyboard.\n"
+		"**********************************************************\n\n",
+		VERSION);
+	fflush(stdout);
+	/* The text above scrolls away, and a hang can come at any time */
+	static const unsigned char title[] = "\pIf this hangs: restart the Mac and run it again";
+	SetWTitle(FrontWindow(), title);
+
+	LoadProgress();
+	if (!SaveProgress() && !AskToRunWithoutSaving())
+	{
+		return 0;
+	}
 
 	cpuType = GestaltOr('proc', 1);
 	fpuType = GestaltOr('fpu ', 0);
@@ -860,7 +940,6 @@ int main(void)
 		cc_fpu_regs_save(fpuRegs);
 	}
 
-	LoadProgress();
 	if (BeginStep("Finding an empty slot"))
 	{
 		FindFaultAddress();
@@ -916,7 +995,7 @@ int main(void)
 	out("\nDone.\n");
 	SaveResults();
 	EndProgress();
-	printf("\nSaved. Press Return to quit.\n");
+	printf(noSaving ? "\nDone, but nothing was saved. Press Return to quit.\n" : "\nSaved. Press Return to quit.\n");
 	getchar();
 	return 0;
 }

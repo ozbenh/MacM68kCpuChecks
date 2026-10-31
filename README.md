@@ -30,7 +30,8 @@ very short time, so the mouse pointer may stutter.
    on your Mac even after running it again. It writes its own results file.
 
    Copy the application to the hard disk first if you like: it writes its
-   results next to itself, so a write-protected floppy won't do.
+   results next to itself, so a write-protected floppy won't do. On a disk it
+   can't write to, it warns you and asks before running.
 4. **Don't touch the mouse or the keyboard** until it says it is done. It should
    take under a few minutes on the slowest Macs.
 5. When it says "Saved", press Return to quit.
