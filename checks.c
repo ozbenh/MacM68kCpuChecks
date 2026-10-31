@@ -19,7 +19,7 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "7"
+#define VERSION "8"
 
 /* The NoA7 build leaves out the tests that use A7 in their own operation */
 #ifdef NO_A7

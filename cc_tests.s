@@ -590,10 +590,6 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	TRACE1
 	.short	0xFE00
 	E
-	T	"T1, privilege violation"
-	move	#0x8000,%sr
-	move	#0x2700,%sr
-	E
 	T	"T1, BRA"
 	TRACE1
 	bra.s	1f

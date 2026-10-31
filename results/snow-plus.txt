@@ -1,4 +1,4 @@
-M68kCpuChecks v7
+M68kCpuChecks v8
 Machine 4
 CPU 1
 FPU 0
@@ -205,8 +205,6 @@ T1, line A: vector=9 sr=2700 a7=S+2F4
   frame sr=2700 pc=0025D8E4
 T1, line F: vector=9 sr=2700 a7=S+2F4
   frame sr=2700 pc=0025D8F2
-T1, privilege violation: vector=8 sr=2000 a7=S+2FA
-  frame sr=8000 pc=C+004
 T1, BRA: vector=9 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+008
 T1, RTE: vector=9 sr=2700 a3=C+014 a7=S+2F8
@@ -286,7 +284,7 @@ Trace, illegal: vector=4 sr=2700 a7=S+2FA
 Trace on change of flow, NOP: not on this machine
 Trace on change of flow, BRA: not on this machine
 RTE format 0: sr=2700 a3=C+010 a7=S+2FE
-  S+2F8=27000025 F6DC0000 
+  S+2F8=27000025 F6CE0000 
 RTE format 1 alone: not on this machine
 RTE undefined format: not on this machine
 M=1, TRAP: not on this machine

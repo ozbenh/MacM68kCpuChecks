@@ -1,4 +1,4 @@
-M68kCpuChecks v7
+M68kCpuChecks v8
 Machine 9
 CPU 4
 FPU 2
@@ -225,8 +225,6 @@ T1, line A: vector=9 sr=2700 a7=S+2EC
   frame sr=2700 pc=00656702 fmt=2 off=024 addr=C+004
 T1, line F: vector=9 sr=2700 a7=S+2EC
   frame sr=2700 pc=00656710 fmt=2 off=024 addr=C+004
-T1, privilege violation: vector=8 sr=2000 a7=S+2F8
-  frame sr=8000 pc=C+004 fmt=0 off=020
 T1, BRA: vector=9 sr=2700 a7=S+2F4
   frame sr=A700 pc=C+008 fmt=2 off=024 addr=C+004
 T1, RTE: vector=9 sr=2700 a3=C+014 a7=S+2F4
@@ -336,7 +334,7 @@ Trace, illegal: vector=4 sr=2700 a7=S+2F8
 Trace on change of flow, NOP: sr=2700 d1=23452700
 Trace on change of flow, BRA: sr=2700
 RTE format 0: sr=2700 a3=C+010
-  S+2F8=27000065 84FA0000 
+  S+2F8=27000065 84EC0000 
 RTE format 1 alone: vector=14 sr=2700 a3=C+010 a7=S+2F8
   frame sr=2700 pc=C+00E fmt=0 off=038
 RTE undefined format: vector=14 sr=2700 a3=C+010 a7=S+2F0
@@ -439,10 +437,10 @@ FDIV inexact status: sr=2700
 FSQRT of -1 status: sr=2700
   D+140=FFFF0000 FFFFFFFF FFFFFFFF 40000000 C0000000 00000000 
   D+180=09002080 
-FMUL overflow status: sr=2700 a3=00659388
+FMUL overflow status: sr=2700 a3=0065937A
   D+140=7FFF0000 80000000 00000000 40000000 C0000000 00000000 
   D+180=02001248 
-FADD status of a signalling NaN: sr=2700 a3=00659394
+FADD status of a signalling NaN: sr=2700 a3=00659386
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 
   D+180=01000000 
 FGETMAN -6: sr=2700
@@ -481,9 +479,9 @@ FPIAR after FMOVE to FPSR: sr=2700 d1=12345678
 FPCR precision 11: sr=2700
   D+140=40000000 80000000 00000400 3FFF0000 80000000 00000000 
   D+180=00000000 
-FMOVEM.X bit patterns: sr=2700 a3=006593A8
+FMOVEM.X bit patterns: sr=2700 a3=0065939A
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 3FFE0000 80000000 00000000 00000000 00000000 00000001 80000000 00000000 00000000 7FFF0000 80000000 00000000 
-FMOVE.X of unnormal and denormal: sr=2700 a3=006593A8
+FMOVE.X of unnormal and denormal: sr=2700 a3=0065939A
   D+140=3FFE0000 80000000 00000000 80000000 00000000 00000000 
   D+180=0C000000 
 FDIV by zero trap: sr=2700
@@ -491,15 +489,15 @@ FDIV inexact trap: sr=2700
 BSUN trap: sr=2700
 FBcc predicate 32: vector=11 sr=2700 a7=S+2F8
   frame sr=2700 pc=C+010 fmt=0 off=02C
-FSAVE after reset: sr=2700 a3=006593A0
+FSAVE after reset: sr=2700 a3=00659392
   D+140=00000000 
 FSAVE after an operation: sr=2700
   D+140=1F380000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
 FSAVE in user mode: vector=8 sr=2700 a7=S+2F8
   frame sr=0700 pc=C+004 fmt=0 off=020
-FRESTORE in user mode: vector=8 sr=2700 a3=006593A0 a7=S+2F8
+FRESTORE in user mode: vector=8 sr=2700 a3=00659392 a7=S+2F8
   frame sr=0700 pc=C+008 fmt=0 off=020
-FRESTORE bad frame: vector=14 sr=2700 a3=006593A4 a7=S+2F8
+FRESTORE bad frame: vector=14 sr=2700 a3=00659396 a7=S+2F8
   frame sr=2700 pc=C+004 fmt=0 off=038
 DIVS.W $80000000 by -1: sr=2700 d0=FFFFFFFF d1=80000000
 
