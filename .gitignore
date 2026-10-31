@@ -1,0 +1,5 @@
+*.o
+M68kCpuChecks.code.bin
+M68kCpuChecks.code.bin.gdb
+M68kCpuChecks.ad
+._M68kCpuChecks.ad
