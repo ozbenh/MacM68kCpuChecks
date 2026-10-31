@@ -19,7 +19,7 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "4"
+#define VERSION "5"
 
 /* The NoA7 build leaves out the tests that use A7 in their own operation */
 #ifdef NO_A7
@@ -725,8 +725,9 @@ int main(void)
 	static uint32_t fpuSaved[64];
 	static uint8_t fpuRegs[96 + 12];
 
-	/* Newlib would buffer the output, which then hides where a hang is */
-	setvbuf(stdout, NULL, _IONBF, 0);
+	/* Newlib may buffer the output, which hides where a hang is. Whole lines keep
+	   that visible without drawing the sweeps a piece at a time. */
+	setvbuf(stdout, NULL, _IOLBF, 0);
 
 	printf(PROGRAM " v%s: don't touch the mouse or the keyboard.\n\n", VERSION);
 
