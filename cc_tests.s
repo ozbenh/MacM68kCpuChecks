@@ -4,11 +4,13 @@
 |
 | T name, mincpu, maxcpu, needs
 |   cpu: Gestalt 'proc' value: 1 = 68000, 3 = 68020, 4 = 68030, 5 = 68040
-|   needs: NF = FPU, NM = PMMU (68851 or 68030), NB = a bus error address in a5
+|   needs: NF = FPU, NM = PMMU (68851 or 68030), NB = a bus error address in a5,
+|   NA = uses A7 in its own operation, left out of the NoA7 build
 
 	.set	NF, 1
 	.set	NM, 2
 	.set	NB, 4
+	.set	NA, 8
 
 	.macro	T name, min=1, max=9, needs=0
 	.text	1
@@ -90,16 +92,25 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 
 | --- The addressing register in its own operation ---------------------------
 
-	T	"LINK A7,#-16"
+	T	"LINK A7,#-16", 1, 9, NA
 	link	%a7,#-16
 	E
-	T	"LINK.L A7,#-16", 3
+	T	"LINK.L A7,#-16", 3, 9, NA
 	.short	0x480F, 0xFFFF, 0xFFF0
 	E
 	T	"LINK A0,#-16"
 	link	%a0,#-16
 	E
-	T	"UNLK A7"
+	T	"UNLK A6"
+	move.l	%a0,(%a6)
+	unlk	%a6
+	E
+	T	"UNLK A7, on the stack", 1, 9, NA
+	lea	-16(%sp),%a3
+	move.l	%a3,(%sp)
+	unlk	%a7
+	E
+	T	"UNLK A7, to the data", 1, 9, NA
 	move.l	%a0,(%sp)
 	unlk	%a7
 	E
@@ -112,7 +123,7 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	T	"MOVE.W A0,-(A0)"
 	move.w	%a0,-(%a0)
 	E
-	T	"MOVE.L A7,-(A7)"
+	T	"MOVE.L A7,-(A7)", 1, 9, NA
 	move.l	%a7,-(%a7)
 	E
 	T	"MOVE.L -(A0),A0"
@@ -136,7 +147,7 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	T	"MOVEM.W D0/A0,-(A0)"
 	movem.w	%d0/%a0,-(%a0)
 	E
-	T	"MOVEM.L D0-D7/A0-A7,-(A7)"
+	T	"MOVEM.L D0-D7/A0-A7,-(A7)", 1, 9, NA
 	movem.l	%d0-%d7/%a0-%a7,-(%a7)
 	E
 	T	"MOVEM.L A0,(A0)"
@@ -148,13 +159,13 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	T	"MOVEM.W (A0)+,D0/A1"
 	movem.w	(%a0)+,%d0/%a1
 	E
-	T	"PEA (A7)"
+	T	"PEA (A7)", 1, 9, NA
 	pea	(%a7)
 	E
-	T	"PEA 4(A7)"
+	T	"PEA 4(A7)", 1, 9, NA
 	pea	4(%a7)
 	E
-	T	"LEA 4(A7),A7"
+	T	"LEA 4(A7),A7", 1, 9, NA
 	lea	4(%a7),%a7
 	E
 	T	"ADD.L D0,(A0)+"
@@ -175,16 +186,16 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	T	"ABCD -(A0),-(A0)"
 	abcd	-(%a0),-(%a0)
 	E
-	T	"MOVE.B D0,-(A7)"
+	T	"MOVE.B D0,-(A7)", 1, 9, NA
 	move.b	%d0,-(%a7)
 	E
-	T	"MOVE.B (A7)+,D0"
+	T	"MOVE.B (A7)+,D0", 1, 9, NA
 	move.b	(%a7)+,%d0
 	E
-	T	"CMPM.B (A7)+,(A7)+"
+	T	"CMPM.B (A7)+,(A7)+", 1, 9, NA
 	cmpm.b	(%a7)+,(%a7)+
 	E
-	T	"EXG A0,A7"
+	T	"EXG A0,A7", 1, 9, NA
 	exg	%a0,%a7
 	movea.l	%a7,%a1
 	movea.l	%a0,%a7
@@ -205,59 +216,59 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 | A byte push moves A7 by 2. Word and long pushes on an odd SP are only for the
 | 68020 on: on a 68000 the address error can't stack its frame, and that halts.
 
-	T	"Odd SP, MOVE.B D0,-(A7)"
+	T	"Odd SP, MOVE.B D0,-(A7)", 1, 9, NA
 	addq.l	#1,%a7
 	move.b	%d0,-(%a7)
 	move.l	%a7,%d1
 	subq.l	#1,%a7
 	E
-	T	"Odd SP, MOVE.B (A7)+,D0"
+	T	"Odd SP, MOVE.B (A7)+,D0", 1, 9, NA
 	addq.l	#1,%a7
 	move.b	(%a7)+,%d0
 	move.l	%a7,%d1
 	subq.l	#3,%a7
 	E
-	T	"Odd SP, MOVE.W D0,-(A7)", 3
+	T	"Odd SP, MOVE.W D0,-(A7)", 3, 9, NA
 	addq.l	#1,%a7
 	move.w	%d0,-(%a7)
 	move.l	%a7,%d1
 	addq.l	#1,%a7
 	E
-	T	"Odd SP, MOVE.L D0,-(A7)", 3
+	T	"Odd SP, MOVE.L D0,-(A7)", 3, 9, NA
 	addq.l	#1,%a7
 	move.l	%d0,-(%a7)
 	move.l	%a7,%d1
 	addq.l	#3,%a7
 	E
-	T	"Odd SP, MOVEM.L D0-D1/A7,-(A7)", 3
+	T	"Odd SP, MOVEM.L D0-D1/A7,-(A7)", 3, 9, NA
 	addq.l	#1,%a7
 	movem.l	%d0-%d1/%a7,-(%a7)
 	move.l	%a7,%d2
 	lea	11(%a7),%a7
 	E
-	T	"Odd SP, LINK A7,#-16", 3
+	T	"Odd SP, LINK A7,#-16", 3, 9, NA
 	addq.l	#1,%a7
 	link	%a7,#-16
 	move.l	%a7,%d1
 	lea	19(%a7),%a7
 	E
-	T	"Odd SP, PEA (A7)", 3
+	T	"Odd SP, PEA (A7)", 3, 9, NA
 	addq.l	#1,%a7
 	pea	(%a7)
 	move.l	%a7,%d1
 	addq.l	#3,%a7
 	E
-	T	"Odd SP, JSR", 3
+	T	"Odd SP, JSR", 3, 9, NA
 	addq.l	#1,%a7
 	jsr	1f(%pc)
 1:	move.l	%a7,%d1
 	addq.l	#3,%a7
 	E
-	T	"Odd SP, TRAP #5", 3
+	T	"Odd SP, TRAP #5", 3, 9, NA
 	addq.l	#1,%a7
 	trap	#5
 	E
-	T	"Odd SP, UNLK A7", 3
+	T	"Odd SP, UNLK A7", 3, 9, NA
 	addq.l	#1,%a7
 	move.l	%a0,(%a7)
 	unlk	%a7
@@ -310,7 +321,7 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	T	"CAS.L -(A0)", 3
 	cas.l	%d1,%d2,-(%a0)
 	E
-	T	"CAS.B A7 inc", 3
+	T	"CAS.B A7 inc", 3, 9, NA
 	cas.b	%d1,%d2,(%a7)+
 	E
 	T	"CAS2.L match", 3

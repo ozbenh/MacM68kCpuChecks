@@ -1,4 +1,4 @@
-M68kCpuChecks v2
+M68kCpuChecks v4
 Machine 27
 CPU 4
 FPU 0
@@ -10,20 +10,27 @@ Bus errors: on the empty slot E
 
 --- Tests ---
 LINK A7,#-16: sr=2700 a7=S+2EC
+  S+2FC=0068
   S+2FC=S+300 
 LINK.L A7,#-16: sr=2700 a7=S+2EC
+  S+2FC=0068
   S+2FC=S+300 
 LINK A0,#-16: sr=2700 a0=S+2FC a7=S+2EC
   S+2FC=D+100 
-UNLK A7: sr=2700 a7=D+100
+UNLK A6: sr=2700 a6=D+100 a7=D+284
+  D+280=D+100 
+UNLK A7, on the stack: sr=2700 a3=S+2F0 a7=S+2F0
+  S+300=S+2F0 
+UNLK A7, to the data: sr=2700 a7=D+100
   S+300=D+100 
 MOVE.L A0,-(A0): sr=2700 a0=D+0FC
   D+0FC=D+100 
 MOVE.L A0,(A0)+: sr=2700 a0=D+104
   D+100=D+100 
 MOVE.W A0,-(A0): sr=2700 a0=D+0FE
-  D+0FE=F77C
+  D+0FE=F374
 MOVE.L A7,-(A7): sr=2700 a7=S+2FC
+  S+2FC=0068
   S+2FC=S+300 
 MOVE.L -(A0),A0: sr=2700 a0=1920272E
 MOVE.L (A0)+,A0: sr=2700 a0=353C434A
@@ -34,7 +41,7 @@ MOVE.L -(A0),(A0)+: sr=2700
 MOVEM.L D0/A0,-(A0): sr=2700 a0=D+0F8
   D+0F8=12345678 D+0FC 
 MOVEM.W D0/A0,-(A0): sr=2700 a0=D+0FC
-  D+0FC=5678F77A 
+  D+0FC=5678F372 
 MOVEM.L D0-D7/A0-A7,-(A7): sr=2700 a7=S+2C0
   S+2C0=12345678 23456789 3456789A 456789AB 56789ABC 6789ABCD 789ABCDE 89ABCDEF D+100 D+140 D+180 D+1C0 D+200 FAULT D+280 
   S+2FC=S+2FC 
@@ -49,8 +56,8 @@ PEA 4(A7): sr=2700 a7=S+2FC
 LEA 4(A7),A7: sr=2700 a7=S+304
 ADD.L D0,(A0)+: sr=2700 a0=D+104
   D+100=477099C2 
-ADD.L (A0)+,A0: sr=2700 a0=35A53ACA
-ADDA.L (A0)+,A0: sr=2700 a0=35A53ACA
+ADD.L (A0)+,A0: sr=2700 a0=35A536C2
+ADDA.L (A0)+,A0: sr=2700 a0=35A536C2
 CMPM.L (A0)+,(A0)+: sr=2700 a0=D+108
 SUBX.L -(A0),-(A0): sr=2700 a0=D+0F8
   D+0F8=E3E3E3E4 
@@ -73,7 +80,7 @@ Odd SP, MOVE.B D0,-(A7): sr=2700 d1=S+2FF a7=S+2FE
   S+2FF=78
 Odd SP, MOVE.B (A7)+,D0: sr=2700 d0=123456EE d1=S+303
 Odd SP, MOVE.W D0,-(A7): sr=2700 d1=S+2FF
-  S+2FF=5678
+  S+2FC=C+040 78
 Odd SP, MOVE.L D0,-(A7): sr=2700 d1=S+2FD
   S+2FD=12345678 
 Odd SP, MOVEM.L D0-D1/A7,-(A7): sr=2700 d2=S+2F5
@@ -185,13 +192,13 @@ Privilege, MOVEC: vector=8 sr=2700 a7=S+2F8
 Trace, NOP: vector=9 sr=2700 a7=S+2F4
   frame sr=A700 pc=C+006 fmt=2 off=024 addr=C+004
 Trace, TRAP: vector=9 sr=2700 a7=S+2EC
-  frame sr=2700 pc=006CEBF8 fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=006CED18 fmt=2 off=024 addr=C+004
 Trace, illegal: vector=4 sr=2700 a7=S+2F8
   frame sr=A700 pc=C+004 fmt=0 off=010
 Trace on change of flow, NOP: sr=2700 d1=23452700
 Trace on change of flow, BRA: sr=2700
 RTE format 0: sr=2700 a3=C+010
-  S+2F8=2700006D 01D00000 
+  S+2F8=2700006D 03080000 
 RTE format 1 alone: vector=14 sr=2700 a3=C+010 a7=S+2F8
   frame sr=2700 pc=C+00E fmt=0 off=038
 RTE undefined format: vector=14 sr=2700 a3=C+010 a7=S+2F0
@@ -251,7 +258,7 @@ MMUSR: after the bus error: sr=2700
 MMU instruction in user mode: vector=8 sr=2700 a7=S+2F8
   frame sr=0700 pc=C+006 fmt=0 off=020
 PFLUSHA in user mode: vector=8 sr=2700 a7=S+2F8
-  frame sr=0700 pc=006CE97C fmt=0 off=020
+  frame sr=0700 pc=006CEA9C fmt=0 off=020
 FMOVE.L rounding: not on this machine
 FMOVE.L round toward zero: not on this machine
 FMOVE.L overflow: not on this machine

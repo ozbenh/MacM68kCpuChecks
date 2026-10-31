@@ -19,11 +19,19 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "2"
+#define VERSION "4"
+
+/* The NoA7 build leaves out the tests that use A7 in their own operation */
+#ifdef NO_A7
+#define PROGRAM "M68kCpuChecks-NoA7"
+#else
+#define PROGRAM "M68kCpuChecks"
+#endif
 
 #define NF 1
 #define NM 2
 #define NB 4
+#define NA 8
 
 #define LM_MMU32BIT 0xCB2
 #define LM_ROMBASE 0x2AE
@@ -93,7 +101,7 @@ static void out(const char *format, ...)
 
 static void SaveResults(void)
 {
-	static const unsigned char name[] = "\pM68kCpuChecks Results";
+	static const unsigned char name[] = "\p" PROGRAM " Results";
 	short refNum;
 
 	(void)FSDelete(name, 0);
@@ -106,6 +114,86 @@ static void SaveResults(void)
 	(void)FSWrite(refNum, &count, outText);
 	(void)FSClose(refNum);
 	(void)FlushVol(NULL, 0);
+}
+
+/*
+ * Before each step, the file below gets its number. A step still in it when the
+ * program starts is one that never came back: it is marked and left out from then
+ * on, so that restarting and running again gets past whatever hangs a Mac.
+ */
+#define MAX_STEPS 512
+
+static struct
+{
+	int32_t current;
+	uint8_t hung[MAX_STEPS];
+} progress;
+static int stepNumber;
+static const unsigned char progressName[] = "\p" PROGRAM " Progress";
+
+static void SaveProgress(void)
+{
+	short refNum;
+	long count = sizeof(progress);
+
+	if (FSOpen(progressName, 0, &refNum) != noErr)
+	{
+		if (Create(progressName, 0, 'ttxt', 'BINA') != noErr ||
+			FSOpen(progressName, 0, &refNum) != noErr)
+		{
+			return;
+		}
+	}
+	(void)SetFPos(refNum, fsFromStart, 0);
+	(void)FSWrite(refNum, &count, &progress);
+	(void)FSClose(refNum);
+	(void)FlushVol(NULL, 0);
+}
+
+static void LoadProgress(void)
+{
+	short refNum;
+	long count = sizeof(progress);
+
+	progress.current = -1;
+	if (FSOpen(progressName, 0, &refNum) != noErr)
+	{
+		return;
+	}
+	if (FSRead(refNum, &count, &progress) != noErr)
+	{
+		memset(&progress, 0, sizeof(progress));
+		progress.current = -1;
+	}
+	(void)FSClose(refNum);
+	if (progress.current >= 0 && progress.current < MAX_STEPS)
+	{
+		progress.hung[progress.current] = 1;
+	}
+	progress.current = -1;
+}
+
+static void EndProgress(void)
+{
+	(void)FSDelete(progressName, 0);
+	(void)FlushVol(NULL, 0);
+}
+
+/* Returns false if this step hung the Mac on an earlier run */
+static bool BeginStep(const char *name)
+{
+	int step = stepNumber++;
+
+	printf("> %s\n", name);
+	fflush(stdout);
+	if (step < MAX_STEPS && progress.hung[step])
+	{
+		out("%s: hung on an earlier run, left out\n", name);
+		return false;
+	}
+	progress.current = step;
+	SaveProgress();
+	return true;
 }
 
 static long GestaltOr(OSType selector, long otherwise)
@@ -595,15 +683,22 @@ static void RunTable(void)
 {
 	for (const struct cc_test *t = cc_table; t->name; t++)
 	{
+#ifdef NO_A7
+		if (t->needs & NA)
+		{
+			out("%s: left out of this build\n", t->name);
+			continue;
+		}
+#endif
 		if (!Runnable(t))
 		{
 			out("%s: not on this machine\n", t->name);
 			continue;
 		}
-		/* On the screen only: if a test hangs, this tells which, and if it comes
-		   back with no next one, the save after it is what hung */
-		printf("> %s\n", t->name);
-		fflush(stdout);
+		if (!BeginStep(t->name))
+		{
+			continue;
+		}
 		Setup(t->code, 0);
 		Snapshot();
 		Run();
@@ -620,6 +715,7 @@ static void RunTable(void)
 			}
 		}
 		/* A crash from here on still leaves the results of what ran */
+		printf("  saving\n");
 		SaveResults();
 	}
 }
@@ -629,7 +725,10 @@ int main(void)
 	static uint32_t fpuSaved[64];
 	static uint8_t fpuRegs[96 + 12];
 
-	printf("M68kCpuChecks v%s: don't touch the mouse or the keyboard.\n\n", VERSION);
+	/* Newlib would buffer the output, which then hides where a hang is */
+	setvbuf(stdout, NULL, _IONBF, 0);
+
+	printf(PROGRAM " v%s: don't touch the mouse or the keyboard.\n\n", VERSION);
 
 	cpuType = GestaltOr('proc', 1);
 	fpuType = GestaltOr('fpu ', 0);
@@ -640,7 +739,7 @@ int main(void)
 		mmuType = 0;
 	}
 
-	out("M68kCpuChecks v%s\n", VERSION);
+	out(PROGRAM " v%s\n", VERSION);
 	out("Machine %ld\nCPU %ld\nFPU %ld\nMMU %ld\n", GestaltOr('mach', 0), cpuType, fpuType,
 		GestaltOr('mmu ', 0));
 	out("System %04lX\nROM %04X\nAddressing %02X\n", GestaltOr('sysv', 0),
@@ -682,33 +781,40 @@ int main(void)
 		cc_fpu_regs_save(fpuRegs);
 	}
 
-	FindFaultAddress();
+	LoadProgress();
+	if (BeginStep("Finding an empty slot"))
+	{
+		FindFaultAddress();
+	}
 	SaveResults();
 
 	out("\n--- Tests ---\n");
 	RunTable();
 	out("\n--- Sweeps: result/flags ---\n");
 	printf("(the sweeps take a while on a slow Mac)\n");
-	SweepBcd("ABCD", cc_f_abcd, false);
-	SweepBcd("SBCD", cc_f_sbcd, false);
-	SweepBcd("NBCD", cc_f_nbcd, true);
-	SaveResults();
-	SweepDiv("DIVU", cc_f_divu, false);
-	SweepDiv("DIVS", cc_f_divs, true);
-	SweepChk("CHK.W", cc_f_chkw, false);
-	SweepShift("ASL.W", cc_f_aslw);
-	SweepShift("ROXR.W", cc_f_roxrw);
-	SaveResults();
+#define SWEEP(call, name, ...) \
+	if (BeginStep(name)) \
+	{ \
+		call(name, __VA_ARGS__); \
+		SaveResults(); \
+	}
+	SWEEP(SweepBcd, "ABCD", cc_f_abcd, false);
+	SWEEP(SweepBcd, "SBCD", cc_f_sbcd, false);
+	SWEEP(SweepBcd, "NBCD", cc_f_nbcd, true);
+	SWEEP(SweepDiv, "DIVU", cc_f_divu, false);
+	SWEEP(SweepDiv, "DIVS", cc_f_divs, true);
+	SWEEP(SweepChk, "CHK.W", cc_f_chkw, false);
+	SWEEP(SweepShift, "ASL.W", cc_f_aslw);
+	SWEEP(SweepShift, "ROXR.W", cc_f_roxrw);
 	if (cpuType >= 3)
 	{
-		SweepChk("CHK.L", cc_f_chkl, true);
-		SweepBounds("CMP2.B", cc_f_cmp2b);
-		SweepBounds("CHK2.B", cc_f_chk2b);
-		SweepLong("DIVU.L", cc_f_divul, true);
-		SweepLong("DIVS.L", cc_f_divsl, true);
-		SweepLong("MULU.L", cc_f_mulul, false);
-		SweepLong("MULS.L", cc_f_mulsl, false);
-		SaveResults();
+		SWEEP(SweepChk, "CHK.L", cc_f_chkl, true);
+		SWEEP(SweepBounds, "CMP2.B", cc_f_cmp2b);
+		SWEEP(SweepBounds, "CHK2.B", cc_f_chk2b);
+		SWEEP(SweepLong, "DIVU.L", cc_f_divul, true);
+		SWEEP(SweepLong, "DIVS.L", cc_f_divsl, true);
+		SWEEP(SweepLong, "MULU.L", cc_f_mulul, false);
+		SWEEP(SweepLong, "MULS.L", cc_f_mulsl, false);
 	}
 
 	if (fpuType)
@@ -718,6 +824,7 @@ int main(void)
 
 	out("\nDone.\n");
 	SaveResults();
+	EndProgress();
 	printf("\nSaved. Press Return to quit.\n");
 	getchar();
 	return 0;

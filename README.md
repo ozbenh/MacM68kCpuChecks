@@ -23,22 +23,22 @@ very short time, so the mouse pointer may stutter.
      SuperDrive whose drive no longer reads 800K disks;
    - `M68kCpuChecks.bin`: MacBinary file.
 
+   The disk images also have `M68kCpuChecks-NoA7` (`M68kCpuChecks-NoA7.bin` on
+   its own), which leaves out the tests using the stack pointer in their own
+   operation. Only run it if asked to, or if the first one doesn't get to the end
+   on your Mac even after running it again. It writes its own results file.
+
    Copy the application to the hard disk first if you like: it writes its
    results next to itself, so a write-protected floppy won't do.
 4. **Don't touch the mouse or the keyboard** until it says it is done. It should
    take under a few minutes on the slowest Macs.
 5. When it says "Saved", press Return to quit.
 
-If nothing seems to happen for a few minutes, it may be stuck, or only slow:
-each test saves the results file, which takes a while on a floppy. Before you
-restart the Mac, note:
-
-- the last lines on the screen (a photo is perfect);
-- whether the mouse pointer still moves;
-- whether it runs from a floppy or a hard disk.
-
-Then restart and send that with the results file: it is saved after each test,
-so what ran before the problem is in it.
+If it hangs or crashes: a slow test can look like a hang, as each test saves
+its results, so give it a few minutes first. Then take a photo of the screen,
+restart the Mac, **and run it again**. It remembers the test it was on, marks it
+as hung and goes on past it. Do this as many times as it takes to get to "Saved".
+A hung test is a useful result, not a problem with your Mac.
 
 It needs Gestalt (System 6.0.4 or later) and is meant for any 68000 to 68040
 Mac; so far it has only run on an emulator, under System 7.1.
@@ -47,6 +47,7 @@ Mac; so far it has only run on an emulator, under System 7.1.
 
 - The file **"M68kCpuChecks Results"**, which the program writes next to
   itself. It is a text file.
+- Any photos of the screen from hangs, and whether the mouse pointer still moved.
 - The model of the Mac, and any accelerator card, CPU, FPU or clock upgrade.
 
 ## Bus errors

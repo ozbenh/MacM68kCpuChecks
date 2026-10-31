@@ -8,25 +8,48 @@ LDFLAGS=-lRetroConsole
 RINCLUDES=$(RETRO68)/m68k-apple-macos/RIncludes
 REZFLAGS=-I$(RINCLUDES)
 
-all: M68kCpuChecks.bin M68kCpuChecks-1.4MB.img
+all: M68kCpuChecks.bin M68kCpuChecks-NoA7.bin M68kCpuChecks-1.4MB.img M68kCpuChecks.dsk
 
 M68kCpuChecks.bin: M68kCpuChecks.code.bin
 	$(REZ) $(REZFLAGS) \
 		--copy "M68kCpuChecks.code.bin" \
 		"$(RINCLUDES)/Retro68APPL.r" \
 		-t "APPL" -c "????" \
-		-o M68kCpuChecks.bin --cc "._M68kCpuChecks.ad" --cc M68kCpuChecks.dsk
+		-o M68kCpuChecks.bin
+
+M68kCpuChecks-NoA7.bin: M68kCpuChecks-NoA7.code.bin
+	$(REZ) $(REZFLAGS) \
+		--copy "M68kCpuChecks-NoA7.code.bin" \
+		"$(RINCLUDES)/Retro68APPL.r" \
+		-t "APPL" -c "????" \
+		-o M68kCpuChecks-NoA7.bin
+
+# 800K HFS floppy image with both programs
+M68kCpuChecks.dsk: M68kCpuChecks.bin M68kCpuChecks-NoA7.bin
+	rm -f $@
+	dd if=/dev/zero of=$@ bs=1024 count=800 status=none
+	hformat -l M68kCpuChecks $@ >/dev/null
+	hcopy -m M68kCpuChecks.bin :
+	hcopy -m M68kCpuChecks-NoA7.bin :
+	humount >/dev/null
 
 # 1.44 MB HFS floppy image, for Macs whose drive can't read 800K disks any more
-M68kCpuChecks-1.4MB.img: M68kCpuChecks.bin
+M68kCpuChecks-1.4MB.img: M68kCpuChecks.bin M68kCpuChecks-NoA7.bin
 	rm -f $@
 	dd if=/dev/zero of=$@ bs=1024 count=1440 status=none
 	hformat -l M68kCpuChecks $@ >/dev/null
 	hcopy -m M68kCpuChecks.bin :
+	hcopy -m M68kCpuChecks-NoA7.bin :
 	humount >/dev/null
 
 M68kCpuChecks.code.bin: checks.o cc_run.o cc_tests.o
 	$(RETRO68)/bin/m68k-apple-macos-g++ $^ -o $@ $(LDFLAGS)
+
+M68kCpuChecks-NoA7.code.bin: checks-noa7.o cc_run.o cc_tests.o
+	$(RETRO68)/bin/m68k-apple-macos-g++ $^ -o $@ $(LDFLAGS)
+
+checks-noa7.o: checks.c
+	$(CC) $(CFLAGS) -DNO_A7 -c $< -o $@
 
 checks.o: checks.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -39,4 +62,4 @@ cc_tests.o: cc_tests.s
 
 .PHONY: clean
 clean:
-	rm -f M68kCpuChecks-1.4MB.img M68kCpuChecks.bin M68kCpuChecks.code.bin M68kCpuChecks.code.bin.gdb *.o M68kCpuChecks.ad ._M68kCpuChecks.ad M68kCpuChecks.dsk
+	rm -f M68kCpuChecks-1.4MB.img M68kCpuChecks.dsk M68kCpuChecks.bin M68kCpuChecks-NoA7.bin *.code.bin *.code.bin.gdb *.o
