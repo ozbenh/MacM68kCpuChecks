@@ -1,4 +1,4 @@
-M68kCpuChecks v5
+M68kCpuChecks v6
 Machine 9
 CPU 4
 FPU 2
@@ -17,6 +17,9 @@ LINK A0,#-16: sr=2700 a0=S+2FC a7=S+2EC
   S+2FC=D+100 
 UNLK A6: sr=2700 a6=D+100 a7=D+284
   D+280=D+100 
+UNLK A7, NOPs around it: sr=2700 a3=S+2F0 a7=S+2F0
+  S+300=S+2F0 
+UNLK A7, no store before it: sr=2700 a7=EEEEEEEE
 UNLK A7, on the stack: sr=2700 a3=S+2F0 a7=S+2F0
   S+300=S+2F0 
 UNLK A7, to the data: sr=2700 a7=D+100
@@ -61,7 +64,6 @@ SUBX.L -(A0),-(A0): sr=2700 a0=D+0F8
 ABCD -(A0),-(A0): sr=2700 a0=D+0FE
   D+0FE=5B
 MOVE.B D0,-(A7): sr=2700 a7=S+2FE
-  S+2FE=78
 MOVE.B (A7)+,D0: sr=2700 d0=123456EE a7=S+302
 CMPM.B (A7)+,(A7)+: sr=2700 a7=S+304
 EXG A0,A7: sr=2700 a0=S+300 a1=D+100
@@ -74,10 +76,10 @@ MOVEP.L D0,1(A0): sr=2700
   D+107=78
 MOVEP.W 1(A0),D0: sr=2700 d0=12343C4A
 Odd SP, MOVE.B D0,-(A7): sr=2700 d1=S+2FF a7=S+2FE
-  S+2FC=C+056 
+  S+2FC=C+02C 
 Odd SP, MOVE.B (A7)+,D0: sr=2700 d0=123456EE d1=S+303
 Odd SP, MOVE.W D0,-(A7): sr=2700 d1=S+2FF
-  S+2FC=C+018 78
+  S+2FF=5678
 Odd SP, MOVE.L D0,-(A7): sr=2700 d1=S+2FD
   S+2FD=12345678 
 Odd SP, MOVEM.L D0-D1/A7,-(A7): sr=2700 d2=S+2F5
@@ -93,7 +95,7 @@ Odd SP, TRAP #5: vector=37 sr=2700 a7=S+2F9
 Odd SP, UNLK A7: sr=2700 a7=D+100
   S+301=D+100 
 Odd A0, MOVE.B D0,-(A0): sr=2700
-  D+100=78
+  D+100=783C434A 
 Odd A0, MOVE.W D0,-(A0): sr=2700 a0=D+0FF
   D+0FF=5678
 Odd A0, MOVE.L D0,-(A0): sr=2700 a0=D+0FD
@@ -115,7 +117,7 @@ CAS2.L match: sr=2700 d1=353C434A d2=F5FC030A
   D+140=56789ABC 
 CAS2.L first mismatch, same Dc: sr=2700 d1=353C434A
 CAS2.W same address: sr=2700 d1=2345353C d2=3456353C
-  D+100=9ABC
+  D+100=9ABC434A 
 MULU.L Dh=Dl: sr=2700 d2=073602F6
 MULS.L Dh=Dl: sr=2700 d2=073602F6
 DIVU.L Dr=Dq: sr=2700
@@ -189,13 +191,13 @@ Privilege, MOVEC: vector=8 sr=2700 a7=S+2F8
 Trace, NOP: vector=9 sr=2700 a7=S+2F4
   frame sr=A700 pc=C+006 fmt=2 off=024 addr=C+004
 Trace, TRAP: vector=9 sr=2700 a7=S+2EC
-  frame sr=2700 pc=00656640 fmt=2 off=024 addr=C+004
+  frame sr=2700 pc=00656644 fmt=2 off=024 addr=C+004
 Trace, illegal: vector=4 sr=2700 a7=S+2F8
   frame sr=A700 pc=C+004 fmt=0 off=010
 Trace on change of flow, NOP: sr=2700 d1=23452700
 Trace on change of flow, BRA: sr=2700
 RTE format 0: sr=2700 a3=C+010
-  S+2F8=27000065 7C300000 
+  S+2F8=27000065 7C5A0000 
 RTE format 1 alone: vector=14 sr=2700 a3=C+010 a7=S+2F8
   frame sr=2700 pc=C+00E fmt=0 off=038
 RTE undefined format: vector=14 sr=2700 a3=C+010 a7=S+2F0
@@ -244,18 +246,18 @@ PMOVE out TC CRP SRP: sr=2700
   D+140=80F84500 
   D+148=7FFF0002 40800050 00000000 00000000 
 PTESTR FC5 level 7: sr=2700 a2=40800068
-  D+140=0001
+  D+140=0001030A 
 PTESTR FC5 level 0: sr=2700
-  D+140=0001
+  D+140=0001030A 
 MMUSR: set it, bus error: vector=2 sr=2700 a7=S+2A4
-  D+140=0001
+  D+140=0001030A 
   frame sr=2700 pc=C+008 fmt=B off=008 ssw=0145 c=0000 b=0000 fa=FAULT dob=00000000 sbaddr=00000000 dib=00000000
 MMUSR: after the bus error: sr=2700
-  D+140=0001
+  D+140=0001030A 
 MMU instruction in user mode: vector=8 sr=2700 a7=S+2F8
   frame sr=0700 pc=C+006 fmt=0 off=020
 PFLUSHA in user mode: vector=8 sr=2700 a7=S+2F8
-  frame sr=0700 pc=006563C4 fmt=0 off=020
+  frame sr=0700 pc=006563C8 fmt=0 off=020
 FMOVE.L rounding: sr=2700 d1=00000004 d2=00000002 d3=FFFFFFFE
   D+140=C0000000 A0000000 00000000 7FFF0000 FFFFFFFF FFFFFFFF 
   D+180=08000208 
@@ -298,10 +300,10 @@ FDIV inexact status: sr=2700
 FSQRT of -1 status: sr=2700
   D+140=FFFF0000 FFFFFFFF FFFFFFFF 40000000 C0000000 00000000 
   D+180=09002080 
-FMUL overflow status: sr=2700 a3=0065863A
+FMUL overflow status: sr=2700 a3=00658664
   D+140=7FFF0000 80000000 00000000 40000000 C0000000 00000000 
   D+180=02001248 
-FADD status of a signalling NaN: sr=2700 a3=00658646
+FADD status of a signalling NaN: sr=2700 a3=00658670
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 
   D+180=01000000 
 FGETMAN -6: sr=2700
@@ -340,9 +342,9 @@ FPIAR after FMOVE to FPSR: sr=2700 d1=12345678
 FPCR precision 11: sr=2700
   D+140=40000000 80000000 00000400 3FFF0000 80000000 00000000 
   D+180=00000000 
-FMOVEM.X bit patterns: sr=2700 a3=0065865A
+FMOVEM.X bit patterns: sr=2700 a3=00658684
   D+140=7FFF0000 FFFFFFFF FFFFFFFF 7FFF0000 FFFFFFFF FFFFFFFF 3FFE0000 80000000 00000000 00000000 00000000 00000001 80000000 00000000 00000000 7FFF0000 80000000 00000000 
-FMOVE.X of unnormal and denormal: sr=2700 a3=0065865A
+FMOVE.X of unnormal and denormal: sr=2700 a3=00658684
   D+140=3FFE0000 80000000 00000000 80000000 00000000 00000000 
   D+180=0C000000 
 FDIV by zero trap: sr=2700

@@ -105,6 +105,22 @@ cc_f_roxrw:	roxr.w	%d0,%d1
 	move.l	%a0,(%a6)
 	unlk	%a6
 	E
+	T	"UNLK A7, NOPs around it", 1, 9, NA
+	lea	-16(%sp),%a3
+	move.l	%a3,(%sp)
+	nop
+	nop
+	nop
+	nop
+	unlk	%a7
+	nop
+	nop
+	nop
+	nop
+	E
+	T	"UNLK A7, no store before it", 1, 9, NA
+	unlk	%a7
+	E
 	T	"UNLK A7, on the stack", 1, 9, NA
 	lea	-16(%sp),%a3
 	move.l	%a3,(%sp)

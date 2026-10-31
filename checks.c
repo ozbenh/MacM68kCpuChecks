@@ -19,7 +19,7 @@
 #include <Memory.h>
 #include <OSUtils.h>
 
-#define VERSION "5"
+#define VERSION "6"
 
 /* The NoA7 build leaves out the tests that use A7 in their own operation */
 #ifdef NO_A7
@@ -125,6 +125,8 @@ static void SaveResults(void)
 
 static struct
 {
+	/* Steps change between versions, so a file from another one is ignored */
+	char version[4];
 	int32_t current;
 	uint8_t hung[MAX_STEPS];
 } progress;
@@ -155,14 +157,16 @@ static void LoadProgress(void)
 	short refNum;
 	long count = sizeof(progress);
 
+	strcpy(progress.version, VERSION);
 	progress.current = -1;
 	if (FSOpen(progressName, 0, &refNum) != noErr)
 	{
 		return;
 	}
-	if (FSRead(refNum, &count, &progress) != noErr)
+	if (FSRead(refNum, &count, &progress) != noErr || strcmp(progress.version, VERSION) != 0)
 	{
 		memset(&progress, 0, sizeof(progress));
+		strcpy(progress.version, VERSION);
 		progress.current = -1;
 	}
 	(void)FSClose(refNum);
@@ -426,6 +430,11 @@ static void PrintResult(const char *name, const void *code)
 			while (end < size && now[end] != was[end])
 			{
 				end++;
+			}
+			/* A long word with some of its bytes unchanged is still one long word */
+			if (!(i & 3) && end - i < 4 && i + 4 <= size)
+			{
+				end = i + 4;
 			}
 			/* A long word whose first bytes didn't change, an address in our buffers */
 			int aligned = i & ~3;

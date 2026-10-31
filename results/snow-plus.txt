@@ -1,4 +1,4 @@
-M68kCpuChecks v5
+M68kCpuChecks v6
 Machine 4
 CPU 1
 FPU 0
@@ -16,6 +16,9 @@ LINK A0,#-16: sr=2700 a0=S+2FC a7=S+2EC
   S+2FC=D+100 
 UNLK A6: sr=2700 a6=D+100 a7=D+284
   D+280=D+100 
+UNLK A7, NOPs around it: sr=2700 a3=S+2F0 a7=S+2F0
+  S+300=S+2F0 
+UNLK A7, no store before it: sr=2700 a7=EEEEEEEE
 UNLK A7, on the stack: sr=2700 a3=S+2F0 a7=S+2F0
   S+300=S+2F0 
 UNLK A7, to the data: sr=2700 a7=D+100
@@ -72,7 +75,7 @@ MOVEP.L D0,1(A0): sr=2700
   D+107=78
 MOVEP.W 1(A0),D0: sr=2700 d0=12343C4A
 Odd SP, MOVE.B D0,-(A7): sr=2700 d1=S+2FF a7=S+2FE
-  S+2FC=C+074 
+  S+2FC=C+04A 
 Odd SP, MOVE.B (A7)+,D0: sr=2700 d0=123456EE d1=S+303
 Odd SP, MOVE.W D0,-(A7): not on this machine
 Odd SP, MOVE.L D0,-(A7): not on this machine
@@ -83,7 +86,7 @@ Odd SP, JSR: not on this machine
 Odd SP, TRAP #5: not on this machine
 Odd SP, UNLK A7: not on this machine
 Odd A0, MOVE.B D0,-(A0): sr=2700
-  D+100=78
+  D+100=783C434A 
 Odd A0, MOVE.W D0,-(A0): vector=3 sr=2700 a0=D+0FF a7=S+2F2
   D+0FE=5678
   frame sr=2700 pc=C+004 access=0010 addr=D+0FF ir=3100
@@ -166,13 +169,13 @@ Privilege, MOVEC: not on this machine
 Trace, NOP: vector=9 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+006
 Trace, TRAP: vector=9 sr=2700 a7=S+2F4
-  frame sr=2700 pc=0025D822
+  frame sr=2700 pc=0025D826
 Trace, illegal: vector=4 sr=2700 a7=S+2FA
   frame sr=A700 pc=C+004
 Trace on change of flow, NOP: not on this machine
 Trace on change of flow, BRA: not on this machine
 RTE format 0: sr=2700 a3=C+010 a7=S+2FE
-  S+2F8=27000025 EE120000 
+  S+2F8=27000025 EE3C0000 
 RTE format 1 alone: not on this machine
 RTE undefined format: not on this machine
 M=1, TRAP: not on this machine
@@ -189,10 +192,10 @@ Read word odd: vector=3 sr=2700 a7=S+2F2
 Read long odd: vector=3 sr=2700 a7=S+2F2
   frame sr=2700 pc=C+002 access=0010 addr=D+101 ir=2228
 Write long odd: vector=3 sr=2700 a7=S+2F2
-  D+100=1234
+  D+100=1234434A 
   frame sr=2700 pc=C+002 access=0010 addr=D+101 ir=2140
 MOVEM odd: vector=3 sr=2700 a7=S+2F2
-  D+100=1234
+  D+100=1234434A 
   frame sr=2700 pc=C+004 access=0010 addr=D+101 ir=48E8
 Bus error, read byte: not on this machine
 Bus error, read word: not on this machine
