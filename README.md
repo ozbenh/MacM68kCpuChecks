@@ -29,8 +29,16 @@ very short time, so the mouse pointer may stutter.
    take under a few minutes on the slowest Macs.
 5. When it says "Saved", press Return to quit.
 
-If the Mac crashes or hangs, restart it and send the results file anyway: the
-file is saved after each test, and the last line tells which one to look at.
+If nothing seems to happen for a few minutes, it may be stuck, or only slow:
+each test saves the results file, which takes a while on a floppy. Before you
+restart the Mac, note:
+
+- the last lines on the screen (a photo is perfect);
+- whether the mouse pointer still moves;
+- whether it runs from a floppy or a hard disk.
+
+Then restart and send that with the results file: it is saved after each test,
+so what ran before the problem is in it.
 
 It needs Gestalt (System 6.0.4 or later) and is meant for any 68000 to 68040
 Mac; so far it has only run on an emulator, under System 7.1.
