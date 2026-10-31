@@ -1,0 +1,21 @@
+M68kCpuChecks v5
+Machine 89
+CPU 5
+FPU 0
+MMU 4
+System 0711
+ROM 067C
+Addressing 01
+Bus errors: not tried on this CPU
+
+--- Tests ---
+LINK A7,#-16: sr=2700 a7=S+2EC
+  S+2FC=021E
+  S+2FC=S+2FC 
+LINK.L A7,#-16: sr=2700 a7=S+2EC
+  S+2FC=021E
+  S+2FC=S+2FC 
+LINK A0,#-16: sr=2700 a0=S+2FC a7=S+2EC
+  S+2FC=D+100 
+UNLK A6: sr=2700 a6=D+100 a7=D+284
+  D+280=D+100 
